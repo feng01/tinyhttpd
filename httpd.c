@@ -143,6 +143,7 @@ void accept_request(int client)
     {
         //文件存在，那去跟常量S_IFMT相与，相与之后的值可以用来判断该文件是什么类型的
         //S_IFMT参读《TLPI》P281，与下面的三个常量一样是包含在<sys/stat.h>
+        //Now, we can also use macro S_ISxxx() to decide which type the file is.
         if ((st.st_mode & S_IFMT) == S_IFDIR)
             //如果这个文件是个目录，那就需要再在 path 后面拼接一个"/index.html"的字符串
             strcat(path, "/index.html");
@@ -390,10 +391,11 @@ int get_line(int sock, char *buf, int size)
         {
             if (c == '\r')
             {
-                //
+                // MSG_PEEK all us to peek the data but don't discard it when function return
                 n = recv(sock, &c, 1, MSG_PEEK);
                 /* DEBUG printf("%02X\n", c); */
                 if ((n > 0) && (c == '\n'))
+
                     recv(sock, &c, 1, 0);
                 else
                     c = '\n';
@@ -524,8 +526,8 @@ int startup(u_short *port)
     if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
         error_die("bind");
 
-//如果调用 bind 后端口号仍然是0，则手动调用getsockname()获取端口号
-    if (*port == 0)  /* if dynamically allocating a port */
+//if the port is 0, then called the getsockname function to get the port that system assigned automatically
+    if (*port == 0)
     {
         int namelen = sizeof(name);
         //getsockname()包含于<sys/socker.h>中，参读《TLPI》P1263
